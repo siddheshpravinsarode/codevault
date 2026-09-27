@@ -1,0 +1,1035 @@
+Below is a cleaner **research-paper-style revision note**. I have reorganized the ideas into a continuous explanation, with longer sentences and explicit reasoning so that you can revise the method rather than memorize isolated code fragments.
+
+# Recursion to Dynamic Programming: A Systematic Method for Solving One-Dimensional DP Problems
+
+## Abstract
+
+Dynamic Programming (DP) is often introduced as a collection of formulas that must be memorized, but a more useful way to understand it is to view DP as an optimization of an already-existing recursive solution. In many problems, recursion naturally explores all possible decisions, but it repeatedly solves the same subproblem. Dynamic Programming eliminates this repeated computation by storing the result of each subproblem and reusing it whenever the same state appears again. The most important skill, therefore, is not memorizing a DP formula but learning how to transform a recursive definition into a DP solution. This document presents a systematic procedure using Climbing Stairs, Min Cost Climbing Stairs, House Robber, and Maximum Subarray as examples.
+
+---
+
+# 1. Introduction: The Relationship Between Recursion and DP
+
+Consider a problem in which you are standing at some position `i` and have multiple possible decisions. For example, suppose you can move either one position or two positions forward.
+
+At position `i`, the possible decisions are:
+
+```text
+                    i
+                  /   \
+               i + 1  i + 2
+```
+
+A recursive solution naturally follows both branches because both possibilities have to be considered.
+
+The important observation is that the recursive function usually represents a **subproblem**.
+
+For example:
+
+```text
+climb(i)
+```
+
+might mean:
+
+```text
+The answer to the problem when I am currently at position i.
+```
+
+If the recursion reaches `climb(3)` multiple times, the meaning of `climb(3)` does not change. The answer for that state is always the same.
+
+Therefore, instead of calculating:
+
+```text
+climb(3)
+climb(3)
+climb(3)
+...
+```
+
+again and again, we calculate it once and store its result.
+
+This gives the fundamental relationship:
+
+```text
+Recursion
+    ↓
+Repeated subproblems
+    ↓
+Store the answer of each subproblem
+    ↓
+Dynamic Programming
+```
+
+The most important idea is therefore:
+
+> **Dynamic Programming is recursion with the answers to previously solved states remembered.**
+
+---
+
+# 2. The General DP Problem-Solving Procedure
+
+For a recursion-based DP problem, the following sequence should be followed.
+
+```text
+1. Define the state.
+        ↓
+2. Identify the choices.
+        ↓
+3. Determine whether we need MIN, MAX, COUNT, etc.
+        ↓
+4. Write the recurrence.
+        ↓
+5. Determine the base case.
+        ↓
+6. Write the pure recursive solution.
+        ↓
+7. Identify repeated states.
+        ↓
+8. Create dp[i].
+        ↓
+9. Store the result of the recursive state.
+        ↓
+10. Return the stored result when the state appears again.
+```
+
+The crucial point is that **DP should come after understanding the recursion**. If the recursive relationship is incorrect, adding an array called `dp` will not fix the logic.
+
+---
+
+# 3. Step One: Define the State
+
+The first question should always be:
+
+> **What exactly does my recursive function represent?**
+
+This is called the **state definition**.
+
+For example:
+
+```text
+climb(i)
+```
+
+could mean:
+
+```text
+The minimum cost required to reach the top when starting from stair i.
+```
+
+This definition is extremely important because every line of the recurrence must follow from it.
+
+Once we have:
+
+```text
+climb(i) = minimum cost from i to the top
+```
+
+we know that the answer to `climb(i)` depends on what can happen after position `i`.
+
+The corresponding DP interpretation then becomes:
+
+```text
+dp[i] = answer represented by climb(i)
+```
+
+Therefore, if:
+
+```text
+climb(i)
+```
+
+means the minimum cost from `i` to the top, then:
+
+```text
+dp[i]
+```
+
+means exactly the same thing.
+
+The difference is that `climb(i)` calculates the answer recursively, while `dp[i]` remembers the answer after it has been calculated.
+
+---
+
+# 4. Step Two: Identify the Choices
+
+After defining the state, determine what decisions are available from that state.
+
+For Min Cost Climbing Stairs, from stair `i`, there are two possibilities:
+
+```text
+Move one stair:
+
+i → i + 1
+```
+
+or:
+
+```text
+Move two stairs:
+
+i → i + 2
+```
+
+Therefore, the recursive function must consider:
+
+```text
+climb(i + 1)
+```
+
+and:
+
+```text
+climb(i + 2)
+```
+
+The structure is:
+
+```text
+                         i
+                       /   \
+                  i + 1    i + 2
+```
+
+This decision-tree structure is often the easiest way to discover the recursion.
+
+---
+
+# 5. Step Three: Determine What the Problem Is Asking For
+
+After identifying the choices, determine how the answers from those choices should be combined.
+
+There are several common possibilities.
+
+If the problem asks for the **number of ways**, the branches are usually added:
+
+```text
+f(i) = f(i + 1) + f(i + 2)
+```
+
+If the problem asks for the **minimum**, we use:
+
+```text
+min(...)
+```
+
+If the problem asks for the **maximum**, we use:
+
+```text
+max(...)
+```
+
+For Min Cost Climbing Stairs, the problem asks for the minimum cost, so we choose:
+
+```text
+min(
+    climb(i + 1),
+    climb(i + 2)
+)
+```
+
+At this point, we know which future choice is better, but we still have to account for the cost of the current stair.
+
+---
+
+# 6. Step Four: Include the Current Contribution
+
+When standing at stair `i`, the cost of that stair is:
+
+```text
+cost[i]
+```
+
+Therefore, after selecting the cheaper future path, the total cost becomes:
+
+```text
+cost[i] + minimum future cost
+```
+
+The complete recurrence is therefore:
+
+```text
+climb(i) =
+    cost[i] + min(
+        climb(i + 1),
+        climb(i + 2)
+    )
+```
+
+This is the fundamental recursive relationship.
+
+Notice that nothing about DP has been used yet.
+
+This is simply the mathematical definition of the recursive problem.
+
+---
+
+# 7. Step Five: Determine the Base Case
+
+Every recursive problem needs to determine when the recursion stops.
+
+For Min Cost Climbing Stairs, once we have reached or passed the top, there is no additional cost.
+
+If:
+
+```text
+i >= len(cost)
+```
+
+then:
+
+```text
+return 0
+```
+
+Therefore:
+
+```python
+if i >= len(cost):
+    return 0
+```
+
+The meaning of this base case is not merely "stop the recursion." It has a mathematical meaning:
+
+```text
+There is no remaining cost after reaching the top.
+```
+
+This is an important habit when solving recursion problems: do not choose a base case simply because the recursion needs one; determine what the answer should logically be when the process reaches its terminal state.
+
+---
+
+# 8. Complete Recursive Solution
+
+We can now combine everything.
+
+```python
+def climb(i):
+
+    if i >= len(cost):
+        return 0
+
+    return cost[i] + min(
+        climb(i + 1),
+        climb(i + 2)
+    )
+```
+
+Because the problem allows us to start from either stair `0` or stair `1`, the final answer is:
+
+```python
+min(climb(0), climb(1))
+```
+
+The complete recursive structure is therefore:
+
+```python
+def climb(i):
+
+    if i >= len(cost):
+        return 0
+
+    return cost[i] + min(
+        climb(i + 1),
+        climb(i + 2)
+    )
+
+answer = min(climb(0), climb(1))
+```
+
+At this point, we have solved the problem conceptually using recursion.
+
+Only now should we ask whether Dynamic Programming is necessary.
+
+---
+
+# 9. Step Six: Identify Repeated States
+
+Consider the recursive tree.
+
+Starting from `0`, we get:
+
+```text
+                         climb(0)
+                        /        \
+                  climb(1)      climb(2)
+                  /     \        /     \
+            climb(2) climb(3) climb(3) climb(4)
+```
+
+Notice that:
+
+```text
+climb(2)
+```
+
+appears more than once.
+
+Similarly:
+
+```text
+climb(3)
+```
+
+appears more than once.
+
+Every time the program encounters:
+
+```text
+climb(2)
+```
+
+it performs the entire recursive calculation for `climb(2)` again.
+
+This is unnecessary because the answer to `climb(2)` is always the same.
+
+This repeated calculation is called an **overlapping subproblem**.
+
+That is the main reason DP can improve the recursive solution.
+
+---
+
+# 10. Step Seven: Create the DP Array
+
+Our state definition was:
+
+```text
+climb(i) = minimum cost from i to the top
+```
+
+Therefore the DP array should store:
+
+```text
+dp[i] = minimum cost from i to the top
+```
+
+In other words:
+
+```text
+dp[i] = climb(i)
+```
+
+We can create the array as:
+
+```python
+dp = [-1] * (len(cost) + 1)
+```
+
+Here, `-1` means:
+
+```text
+This state has not been calculated yet.
+```
+
+The DP array is therefore simply a memory structure for our recursive states.
+
+---
+
+# 11. Step Eight: Check Whether a State Was Already Solved
+
+Before calculating `climb(i)`, we ask:
+
+```text
+Have I already calculated climb(i)?
+```
+
+The DP representation of that question is:
+
+```python
+if dp[i] != -1:
+    return dp[i]
+```
+
+If `dp[i]` contains a value, then we already know the answer.
+
+Instead of executing:
+
+```text
+climb(i + 1)
+climb(i + 2)
+```
+
+again, we immediately return the stored answer.
+
+This is the central operation of memoization.
+
+---
+
+# 12. Step Nine: Store the Recursive Result
+
+The original recursion was:
+
+```python
+return cost[i] + min(
+    climb(i + 1),
+    climb(i + 2)
+)
+```
+
+The DP version changes this into:
+
+```python
+dp[i] = cost[i] + min(
+    climb(i + 1),
+    climb(i + 2)
+)
+```
+
+and then:
+
+```python
+return dp[i]
+```
+
+The important thing to notice is that **the recurrence itself has not changed**.
+
+We have simply added memory.
+
+---
+
+# 13. Final Top-Down DP Solution
+
+```python
+class Solution(object):
+
+    def minCostClimbingStairs(self, cost):
+
+        dp = [-1] * (len(cost) + 1)
+
+        def climb(i):
+
+            if i >= len(cost):
+                return 0
+
+            if dp[i] != -1:
+                return dp[i]
+
+            dp[i] = cost[i] + min(
+                climb(i + 1),
+                climb(i + 2)
+            )
+
+            return dp[i]
+
+        return min(climb(0), climb(1))
+```
+
+This is called **Top-Down Dynamic Programming with Memoization** because we start from the final problem:
+
+```text
+climb(0)
+```
+
+and recursively move toward smaller subproblems while storing their answers.
+
+---
+
+# 14. Climbing Stairs: Same Process, Different Operation
+
+Now apply exactly the same reasoning to Climbing Stairs.
+
+The problem asks for the number of ways to reach stair `n`.
+
+Define:
+
+```text
+climb(i) =
+number of ways to reach n starting from i
+```
+
+From `i`, we can move:
+
+```text
+i + 1
+```
+
+or:
+
+```text
+i + 2
+```
+
+Because we are counting possibilities, the two branches are added:
+
+```text
+climb(i) =
+    climb(i + 1) +
+    climb(i + 2)
+```
+
+The base case is:
+
+```python
+if i == n:
+    return 1
+```
+
+Why `1`?
+
+Because reaching the target represents one successful way.
+
+If we go beyond the target:
+
+```python
+if i > n:
+    return 0
+```
+
+because that path is invalid.
+
+Therefore:
+
+```python
+def climb(i):
+
+    if i == n:
+        return 1
+
+    if i > n:
+        return 0
+
+    return climb(i + 1) + climb(i + 2)
+```
+
+The DP interpretation is:
+
+```text
+dp[i] = climb(i)
+```
+
+The recurrence becomes:
+
+```text
+dp[i] = dp[i + 1] + dp[i + 2]
+```
+
+The important observation is that **only the operation changed**.
+
+For Climbing Stairs:
+
+```text
+COUNT → addition
+```
+
+For Min Cost:
+
+```text
+MIN → minimum
+```
+
+The recursion-to-DP procedure remains identical.
+
+---
+
+# 15. House Robber: Same Structure With Take and Skip
+
+House Robber provides another important example because the choices have names rather than simply being `i + 1` and `i + 2`.
+
+At house `i`, there are two possibilities.
+
+The first possibility is to skip the house:
+
+```text
+skip
+    ↓
+rob(i + 1)
+```
+
+The second possibility is to rob the house:
+
+```text
+take
+    ↓
+nums[i] + rob(i + 2)
+```
+
+The reason we move to `i + 2` after taking the current house is that adjacent houses cannot both be robbed.
+
+Therefore:
+
+```text
+rob(i) =
+    max(
+        rob(i + 1),
+        nums[i] + rob(i + 2)
+    )
+```
+
+The state is:
+
+```text
+rob(i) =
+maximum amount of money obtainable from house i onward
+```
+
+The base case is:
+
+```python
+if i >= len(nums):
+    return 0
+```
+
+The recursive solution becomes:
+
+```python
+def rob(i):
+
+    if i >= len(nums):
+        return 0
+
+    skip = rob(i + 1)
+
+    take = nums[i] + rob(i + 2)
+
+    return max(skip, take)
+```
+
+Now DP simply stores:
+
+```text
+dp[i] = rob(i)
+```
+
+Therefore:
+
+```python
+if dp[i] != -1:
+    return dp[i]
+
+dp[i] = max(skip, take)
+
+return dp[i]
+```
+
+Again, the fundamental process has not changed.
+
+---
+
+# 16. Maximum Subarray: A Slightly Different Recurrence
+
+Maximum Subarray demonstrates why defining the state carefully is important.
+
+Instead of defining:
+
+```text
+best(i) = maximum subarray anywhere in the array
+```
+
+we can define:
+
+```text
+best(i) =
+maximum sum of a subarray that starts at index i
+```
+
+Now there are two possibilities.
+
+The first is to take only the current element:
+
+```text
+nums[i]
+```
+
+The second is to take the current element and continue the subarray:
+
+```text
+nums[i] + best(i + 1)
+```
+
+Therefore:
+
+```text
+best(i) =
+max(
+    nums[i],
+    nums[i] + best(i + 1)
+)
+```
+
+The important point here is that the state definition determines the recurrence.
+
+If you define the state differently, you may obtain a different but still valid DP formulation.
+
+---
+
+# 17. Comparing the Four Problems
+
+The four problems demonstrate the same general DP structure.
+
+### Climbing Stairs
+
+State:
+
+```text
+climb(i) = number of ways to reach n from i
+```
+
+Transition:
+
+```text
+dp[i] = dp[i + 1] + dp[i + 2]
+```
+
+Operation:
+
+```text
+COUNT
+```
+
+---
+
+### Min Cost Climbing Stairs
+
+State:
+
+```text
+climb(i) = minimum cost from i to the top
+```
+
+Transition:
+
+```text
+dp[i] = cost[i] + min(
+    dp[i + 1],
+    dp[i + 2]
+)
+```
+
+Operation:
+
+```text
+MIN
+```
+
+---
+
+### House Robber
+
+State:
+
+```text
+rob(i) = maximum money obtainable from i onward
+```
+
+Transition:
+
+```text
+dp[i] = max(
+    dp[i + 1],
+    nums[i] + dp[i + 2]
+)
+```
+
+Operation:
+
+```text
+MAX
+```
+
+---
+
+### Maximum Subarray
+
+State:
+
+```text
+best(i) = maximum sum of a subarray starting at i
+```
+
+Transition:
+
+```text
+dp[i] = max(
+    nums[i],
+    nums[i] + dp[i + 1]
+)
+```
+
+Operation:
+
+```text
+MAX
+```
+
+---
+
+# 18. The Most Important Difference Between the Problems
+
+The structure is similar, but the **meaning of the state and the operation performed on the choices** changes.
+
+```text
+Problem                  Operation
+
+Climbing Stairs          COUNT
+                         ↓
+                         +
+
+Min Cost Climbing       MIN
+                         ↓
+                         min()
+
+House Robber            MAX
+                         ↓
+                         max()
+
+Maximum Subarray         MAX
+                         ↓
+                         max()
+```
+
+Therefore, when you see a new DP problem, do not immediately ask:
+
+> "Which DP formula do I remember?"
+
+Instead ask:
+
+> "What does my recursive function represent, what choices do I have, and how should I combine the answers from those choices?"
+
+That approach allows you to derive the recurrence rather than memorize it.
+
+---
+
+# 19. The Complete Recursion-to-DP Transformation
+
+This is the sequence that should become automatic.
+
+```text
+                 PROBLEM
+                    |
+                    ↓
+             Define the state
+                    |
+                    ↓
+              Find the choices
+                    |
+                    ↓
+          Decide MIN / MAX / COUNT
+                    |
+                    ↓
+             Write recurrence
+                    |
+                    ↓
+              Find base case
+                    |
+                    ↓
+          Write pure recursion
+                    |
+                    ↓
+          Draw the recursion tree
+                    |
+                    ↓
+        Find repeated states f(i)
+                    |
+                    ↓
+             Create dp[i]
+                    |
+                    ↓
+      Check whether dp[i] exists
+                    |
+                    ↓
+       Calculate and store answer
+                    |
+                    ↓
+             Return dp[i]
+```
+
+---
+
+# 20. Final Revision Rule
+
+When you encounter a new recursive DP problem, write these five things on paper before writing the code:
+
+```text
+STATE:
+What does f(i) mean?
+
+CHOICES:
+What can I do from i?
+
+OPERATION:
+MIN, MAX, COUNT, or something else?
+
+BASE:
+When does the recursion stop?
+
+DP:
+What does dp[i] store?
+```
+
+For example, for Min Cost Climbing Stairs:
+
+```text
+STATE:
+climb(i) = minimum cost from i to top
+
+CHOICES:
+i + 1
+i + 2
+
+OPERATION:
+MIN
+
+CURRENT CONTRIBUTION:
+cost[i]
+
+BASE:
+i >= len(cost) → 0
+
+DP:
+dp[i] = climb(i)
+```
+
+Then the entire recurrence follows naturally:
+
+```text
+climb(i)
+=
+cost[i]
++
+min(
+    climb(i + 1),
+    climb(i + 2)
+)
+```
+
+and after memoization:
+
+```text
+dp[i]
+=
+cost[i]
++
+min(
+    dp[i + 1],
+    dp[i + 2]
+)
+```
+
+The key concept to retain is therefore not a particular piece of code, but the transformation:
+
+```text
+RECURSION
+
+f(i)
+  ↓
+make choices
+  ↓
+combine their answers
+  ↓
+return answer
+
+
+                    ↓
+              repeated f(i)
+                    ↓
+                  STORE
+
+
+DYNAMIC PROGRAMMING
+
+dp[i] = answer of f(i)
+```
+
+Once this becomes natural, problems such as **Climbing Stairs, Min Cost Climbing Stairs, House Robber, Knapsack, Coin Change, and many other one-dimensional DP problems** become variations of the same underlying process.
+
+Available next action: :chatgpt-content-reference{index="0"}
